@@ -1,3 +1,10 @@
+About:
+To improve Code Inspection for PHPStorm I needed to automatically add all database attributes as @property to my CActiveRecord classes. Additionally it adds all relations and some common used CActiveRecord methods too.
+
+
+
+
+
 Installation:
 Copy both .php files into your protected/commands folder.
 Update db-configuration inside PropertyConfig.php
@@ -21,3 +28,16 @@ Similar to this:
  * @method User|CActiveRecord find()
  */
 class User extends CActiveRecord
+
+
+
+
+-----
+How the code works:
+    Walk through all files in a "/models/" directory
+    Extract the tablename from the tableName() function
+    Fetch the database information with yii - and map the database type into phpdoc types
+    Extract the relations from the relations() function
+    Find the class docstring and delete all @property and @method from there
+    Add both above informations as @property
+    Add some predefined functions as @method
