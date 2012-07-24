@@ -1,0 +1,23 @@
+Installation:
+Copy both .php files into your protected/commands folder.
+Update db-configuration inside PropertyConfig.php
+
+Run:
+This command changes your code - so backup (or vcs) your code.
+The database is accessed just readonly.
+
+php yiic.php property commands/PropertyConfig.php
+
+After it finished, all CActiveRecord classes should have updated @property thing at the beginning.
+
+Similar to this:
+/*
+ * @property int id
+ * @property string password
+ * @property string name
+ * @property bool active
+ * @property Group group
+ * @property array roles
+ * @method User|CActiveRecord find()
+ */
+class User extends CActiveRecord
