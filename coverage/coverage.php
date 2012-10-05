@@ -17,6 +17,7 @@
  * $wrappre->dir = 'path/to/coverage/dir';
  * $wrapper->stop();
  */
+ include "codespy/codespy.php";
 class Wrapper
 {
 	public $dir;
@@ -40,10 +41,12 @@ class Wrapper
 
 	public function stop()
 	{
+        $coverage = \codespy\Analyzer::$outputformat = 'html';
 		if (!$this->dir)
 			throw new Exception('You need to specifiy a directory');
 
 		$codeCoverage = xdebug_get_code_coverage();
+        diedump($codeCoverage);
 		if (!is_dir($this->dir))
 			mkdir($this->dir,0777);
 
@@ -151,8 +154,13 @@ class Filter {
 		{
             if (!$data['coverage'])
                 diedump($data);
-			foreach ($data['coverage'] as $file=>$val)
+			foreach ($data['coverage'] as $file=>$lines)
 			{
+            if ($file == '/mnt/6/ausgelagert/htdocs/yii/ysicat/protected/components/Controller.php')
+            {
+                diedump($lines);
+                diedump(array_keys($lines));
+            }
 				if (preg_match($this->excludeFileRegex, $file))
                 {
 					unset($data['coverage'][$file]);
@@ -178,9 +186,31 @@ class Merger {
             if (!isset($this->data[$file]))
                 $this->data[$file] = array();
             foreach ($coverData as $line=>$val)
-                if ($val === 1)
+                if ($val > 0)
                     $this->data[$file][$line] = $val;
         }
         return $this->data;
 	}
+}
+
+class Converter {
+    public function toVim($data)
+    {
+        foreach($data as $file=>$lines)
+        {
+            if ($file == '/mnt/6/ausgelagert/htdocs/yii/ysicat/protected/components/Controller.php')
+            {
+                diedump($lines);
+                diedump(array_keys($lines));
+            }
+            // echo PHP_EOL.$file,' :  ',join(',',array_keys($lines));
+            echo PHP_EOL.$file,PHP_EOL,'match cursorline /\%',join('l\|\%',array_keys($lines))."l/";
+        }
+    }
+
+    public function toHtml($data)
+    {
+        $html = '';
+        return $html;
+    }
 }
