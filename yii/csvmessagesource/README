@@ -1,0 +1,44 @@
+About:
+------
+For saving translation files as csv. Also it supports some additional options.
+The files have following format:
+    * they must end with .csv
+    * they contain a csv list like "source message", "translated message"
+
+
+
+Installation:
+-------------
+Copy CsvMessageSource.php file into your protected/extensions folder.
+Inside your config.php add:
+array(
+    ...
+    'components'=>array(
+        ...
+        'messages' => array(
+            'class' => 'application.extensions.CsvMessageSource',
+            //'defaultTranslation'=>'global',
+            //'messageDir'=>'translation',
+            //'languages'=>array('at'=>array('de', 'at')),
+            //'delimiter'=>';',
+        ),
+        ...
+    ),
+    ...
+)
+
+
+Configurations:
+---------------
+I added some more configuration options:
+defaultTranslation:
+    Currently if you translate stuff like "yes" and "no" you have to do this once per category
+    defaultTranslation is a category which will be additionally loaded to each category
+    for example "global" will now look if there exists a global.csv and then load it
+messageDir:
+    If you dont want you translations stored insided the "messages" dir you can this option
+languages:
+    If you have a language which inherits from another one (at from de for example)
+    you can specify it here and it will merge all translations together
+delimiter:
+    the csv delimiter
