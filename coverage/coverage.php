@@ -17,7 +17,6 @@
  * $wrappre->dir = 'path/to/coverage/dir';
  * $wrapper->stop();
  */
- include "codespy/codespy.php";
 class Wrapper
 {
 	public $dir;
@@ -46,7 +45,6 @@ class Wrapper
 			throw new Exception('You need to specifiy a directory');
 
 		$codeCoverage = xdebug_get_code_coverage();
-        diedump($codeCoverage);
 		if (!is_dir($this->dir))
 			mkdir($this->dir,0777);
 
@@ -152,15 +150,8 @@ class Filter {
 				return array();
 		if ($this->excludeFileRegex)
 		{
-            if (!$data['coverage'])
-                diedump($data);
 			foreach ($data['coverage'] as $file=>$lines)
 			{
-            if ($file == '/mnt/6/ausgelagert/htdocs/yii/ysicat/protected/components/Controller.php')
-            {
-                diedump($lines);
-                diedump(array_keys($lines));
-            }
 				if (preg_match($this->excludeFileRegex, $file))
                 {
 					unset($data['coverage'][$file]);
