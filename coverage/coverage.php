@@ -185,23 +185,102 @@ class Merger {
 }
 
 class Converter {
-    public function toVim($data)
+    public function toVim($coverage)
     {
-        foreach($data as $file=>$lines)
+        $return = array();
+        foreach($coverage as $file=>$lines)
         {
-            if ($file == '/mnt/6/ausgelagert/htdocs/yii/ysicat/protected/components/Controller.php')
-            {
-                diedump($lines);
-                diedump(array_keys($lines));
-            }
             // echo PHP_EOL.$file,' :  ',join(',',array_keys($lines));
-            echo PHP_EOL.$file,PHP_EOL,'match cursorline /\%',join('l\|\%',array_keys($lines))."l/";
+            $return[] = $file.PHP_EOL.'match cursorline /\%'.join('l\|\%',array_keys($lines))."l/";
         }
+        return implode(PHP_EOL, $return);
     }
 
-    public function toHtml($data)
+    public function toHtml($coverage)
     {
         $html = '';
         return $html;
+    }
+
+    /**
+     * $name projectname
+     */
+    public function toClover($coverage, $name='')
+    {
+        $time = time();
+        $xmlDocument = new DOMDocument('1.0', 'UTF-8');
+        $xmlDocument->formatOutput = TRUE;
+
+        $xmlCoverage = $xmlDocument->createElement('coverage');
+        $xmlCoverage->setAttribute('generated', $time);
+        $xmlDocument->appendChild($xmlCoverage);
+
+        $xmlProject = $xmlDocument->createElement('project');
+        $xmlProject->setAttribute('timestamp', $time);
+
+        if (is_string($name)) {
+            $xmlProject->setAttribute('name', $name);
+        }
+
+        $xmlCoverage->appendChild($xmlProject);
+
+        $packages = array();
+
+        foreach ($coverage as $file=>$coverageData)
+        {
+            $namespace = 'global';
+
+            $xmlFile = $xmlDocument->createElement('file');
+            $xmlFile->setAttribute('name', $file);
+
+            $lines        = array();
+
+            foreach ($coverageData as $line => $data)
+            {
+                if ($line > 0) // TODO is this right?
+                {
+                    $lines[$line] = array(
+                      'count' => 1, 'type' => 'stmt'
+                    );
+                }
+            }
+
+            ksort($lines);
+
+            foreach ($lines as $line => $data)
+            {
+                $xmlLine = $xmlDocument->createElement('line');
+                $xmlLine->setAttribute('num', $line);
+                $xmlLine->setAttribute('type', $data['type']);
+
+                if (isset($data['name'])) {
+                    $xmlLine->setAttribute('name', $data['name']);
+                }
+
+                if (isset($data['crap'])) {
+                    $xmlLine->setAttribute('crap', $data['crap']);
+                }
+
+                $xmlLine->setAttribute('count', $data['count']);
+                $xmlFile->appendChild($xmlLine);
+            }
+
+            if ($namespace == 'global') {
+                $xmlProject->appendChild($xmlFile);
+            } else {
+                if (!isset($packages[$namespace])) {
+                    $packages[$namespace] = $xmlDocument->createElement(
+                      'package'
+                    );
+
+                    $packages[$namespace]->setAttribute('name', $namespace);
+                    $xmlProject->appendChild($packages[$namespace]);
+                }
+
+                $packages[$namespace]->appendChild($xmlFile);
+            }
+        }
+
+        return $xmlDocument->saveXML();
     }
 }
