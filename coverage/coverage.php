@@ -1,11 +1,45 @@
 <?php
 /**
- * based on: https://github.com/sebastianbergmann/php-code-coverage
- * I don't use it since it is slow, requires much memory and isn't serializable
+ * Creates codecoverage files for your code.
+ * Based on phpunits: https://github.com/sebastianbergmann/php-code-coverage
+ * With following advantages:
+ *  - faster (at each request)
+ *  - can be used outside of phpunit
+ *  - can merge the generated coverage files
+ *
+ * Usage:
+ * ------
+ * First you need to configure xdebug to enable coverage
+ * Then you need to determine the code which needs the coverage.
+ * At the beginning add:
+ * include coverage.php;
+ * $wrapper = new Coverage\Wrapper();
+ * $wrapper->dir = '/path/for/output/
+ * $wrapper->start();
+ * // here comes your code..
+ * $wrapper->stop();
+ *
+ * -----------------
+ * After you do some requests the /path/for/output contains some files - those files are serialized arrays with the coverage info + some meta
+ * To process them further this package comes with some tools:
+ * include "coverage.php";
+ * $reader = new Coverage\Reader('/path/for/output/');
+ * $filter = new Coverage\Filter();
+ * $filter->excludeFileRegex = '/\/yii\/.*\/framework\//';
+ * $merger = new Coverage\Merger();
+ * $converter = new Coverage\Converter();
+ * foreach ($reader as $k=>$data)
+ * {
+ *         $data = $filter->filterData($data);
+ *             $merger->mergeData($data);
+ * }
+ * file_put_contents('clover.xml', $converter->toClover($merger->data));
+ *
+ * As you see it is quite straight forward
  */
-// uses: http://xdebug.org/docs/code_coverage
-// TODO: http://www.reddit.com/r/PHP/comments/plufb/an_experimental_code_coverage_analysis_tool/
 
+namespace Coverage
+{
 
 /**
  * used to create codecoverage from a web application.
@@ -69,6 +103,9 @@ class Wrapper
  * Iterator which will read the directory where the wrapper saved all coverage files
  * after that it returns the decoded content of those files
  * it is ordered by the creation date
+ * usage:
+ * $reader = new Reader('/path');
+ * foreach ($reader as $k=>$data)
  */
 class Reader implements Iterator
 {
@@ -131,6 +168,10 @@ class Reader implements Iterator
  * minTime the coverage must be minimum as old as this unix timestamp
  * maxTime the coverage must be maximum as old as this unix timestamp
  * excludeFileRegex a regex which matches coverage files which should be excluded
+ * Usage:
+ * $filter = new Filter();
+ * $filter->minTime = time();
+ * $data = $filter->filterData($data);
  */
 class Filter {
 	public $minTime;
@@ -166,6 +207,11 @@ class Filter {
 
 /**
  * will merge all coverages into one
+ * Usage:
+ * $merger = new Merger();
+ * foreach(.. as $data)
+ *    $merger->mergeData($data);
+ * $allData = $merger->data;
  */
 class Merger {
     public $data = array();
@@ -184,6 +230,12 @@ class Merger {
 	}
 }
 
+/**
+ * will convert the data in various formats
+ * Usage:
+ * $converter = new Converter();
+ * echo $converter->toClover($data);
+ */
 class Converter {
     public function toVim($coverage)
     {
@@ -283,4 +335,9 @@ class Converter {
 
         return $xmlDocument->saveXML();
     }
+}
+
+
+
+// end namespace Coverage
 }
