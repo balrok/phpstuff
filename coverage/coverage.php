@@ -14,7 +14,7 @@
  * At the beginning add:
  * include coverage.php;
  * $wrapper = new Coverage\Wrapper();
- * $wrapper->dir = '/path/for/output/
+ * $wrapper->dir = '/path/for/output/';
  * $wrapper->start();
  * // here comes your code..
  * $wrapper->stop();
@@ -74,7 +74,6 @@ class Wrapper
 
 	public function stop()
 	{
-        $coverage = \codespy\Analyzer::$outputformat = 'html';
 		if (!$this->dir)
 			throw new Exception('You need to specifiy a directory');
 
@@ -107,7 +106,7 @@ class Wrapper
  * $reader = new Reader('/path');
  * foreach ($reader as $k=>$data)
  */
-class Reader implements Iterator
+class Reader implements \Iterator
 {
 	/// filled on initialization: contains a sorted list of all files
 	protected $files = array();
@@ -260,7 +259,7 @@ class Converter {
     public function toClover($coverage, $name='')
     {
         $time = time();
-        $xmlDocument = new DOMDocument('1.0', 'UTF-8');
+        $xmlDocument = new \DOMDocument('1.0', 'UTF-8');
         $xmlDocument->formatOutput = TRUE;
 
         $xmlCoverage = $xmlDocument->createElement('coverage');
