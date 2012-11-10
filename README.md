@@ -26,6 +26,10 @@ The current content is:
 Yii:
 ====
 * Propertycommand: A commandline util to add database fields as docstring @property to your CActiveRecord classes.
+* CsvMessageSource: A translation-source format in CSV
 
+General:
+========
+* coverage: A clover.xml Coverage creator - intended to be used for a whole webpage with multiple requests
 
 
