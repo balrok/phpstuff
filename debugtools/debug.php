@@ -285,6 +285,7 @@ class DebugVarDumper
                                 if ($meth->getModifiers() & $meth::IS_PRIVATE) $type[] = 'private';
                                 if ($meth->getModifiers() & $meth::IS_ABSTRACT) $type[] = 'abstract';
                                 if ($meth->getModifiers() & $meth::IS_FINAL) $type[] = 'final';
+                                if ($meth->isInternal()) $type[] = '/*internal*/';
                                 $type = implode(' ', $type);
 
                                 $parameters = array();
@@ -297,7 +298,12 @@ class DebugVarDumper
                                         $paramStr .= '&';
                                     $paramStr .= '$'.$param->getName();
                                     if ($param->isOptional())
-                                        $paramStr .= ' = '.$this->dumpInternal($param->getDefaultValue(), $level+1);
+                                    {
+                                        if ($meth->isInternal()) // you can't get the default for them :/
+                                            $paramStr .= ' = "???"';
+                                        else
+                                            $paramStr .= ' = '.$this->dumpInternal($param->getDefaultValue(), $level+1);
+                                    }
                                     $parameters[] = $paramStr;
                                 }
 
