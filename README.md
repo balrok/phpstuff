@@ -31,5 +31,5 @@ Yii:
 General:
 ========
 * coverage: A clover.xml Coverage creator - intended to be used for a whole webpage with multiple requests
-
+* debugtools: my debughelper which is like an improved echo, print_r, var_dump
 
