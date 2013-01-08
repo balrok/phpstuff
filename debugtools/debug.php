@@ -80,7 +80,8 @@ function dump($data, $prec=3, $return = false)
     if (!enableDebug())
         return;
     $ret = whereCalled(2);
-    $ret .= DebugVarDumper::dumpAsString($data, $prec, true);
+    $d = new DebugVarDumper();
+    $ret .= $d->dumpAsString($data, $prec, true);
     if ($return)
         return $ret;
     echo $ret;
@@ -104,8 +105,8 @@ function startswith($needle, $haystack)
  */
 class DebugVarDumper
 {
-    private static $_objects;
-    private static $_depth;
+    private $_objects;
+    private $_depth;
 
     /**
      * Displays a variable.
@@ -115,9 +116,9 @@ class DebugVarDumper
      * @param integer $depth maximum depth that the dumper should go into the variable. Defaults to 10.
      * @param boolean $highlight whether the result should be syntax-highlighted
      */
-    public static function dump($var,$depth=10,$highlight=false)
+    public function dump($var, $depth=10, $highlight=false)
     {
-        echo self::dumpAsString($var,$depth,$highlight);
+        echo $this->dumpAsString($var,$depth,$highlight);
     }
 
     /**
@@ -129,11 +130,11 @@ class DebugVarDumper
      * @param boolean $highlight whether the result should be syntax-highlighted
      * @return string the string representation of the variable
      */
-    public static function dumpAsString($var,$depth=10,$highlight=false)
+    public function dumpAsString($var,$depth=10,$highlight=false)
     {
-        self::$_objects=array();
-        self::$_depth=$depth;
-        $output = self::dumpInternal($var,0);
+        $this->_objects=array();
+        $this->_depth=$depth;
+        $output = $this->dumpInternal($var,0);
         if($highlight)
         {
             $result = highlight_string("<?php\n".$output,true);
@@ -173,7 +174,7 @@ class DebugVarDumper
                 $output.='{unknown}';
                 break;
             case 'array':
-                if(self::$_depth<=$level)
+                if($this->_depth<=$level)
                     $output.='array(...)';
                 else if(empty($var))
                     $output.='array()';
@@ -186,20 +187,20 @@ class DebugVarDumper
                     {
                         $key2=str_replace("'","\\'",$key);
                         $output .="\n".$spaces."    '$key2' => ";
-                        $output .=self::dumpInternal($var[$key],$level+1);
+                        $output .=$this->dumpInternal($var[$key],$level+1);
                         $output .=',';
                     }
                     $output.="\n".$spaces.')';
                 }
                 break;
             case 'object':
-                if(($id=array_search($var,self::$_objects,true))!==false)
+                if(($id=array_search($var,$this->_objects,true))!==false)
                     $output .= get_class($var).'#'.($id+1).'(...)';
-                else if(self::$_depth<=$level)
+                else if($this->_depth<=$level)
                     $output .= get_class($var).'(...)';
                 else
                 {
-                    $id=array_push(self::$_objects,$var);
+                    $id=array_push($this->_objects,$var);
                     $spaces=str_repeat(' ',$level*4);
 
                     if (class_exists('ReflectionClass', false))
@@ -217,7 +218,7 @@ class DebugVarDumper
                         // output all constants
                         foreach ($reflClass->getConstants() as $key=>$value)
                         {
-                            $output .= "\n".$spaces.$key.' = '.  self::dumpInternal($value,$level+1) . ';';
+                            $output .= "\n".$spaces.$key.' = '.  $this->dumpInternal($value,$level+1) . ';';
                         }
 
                         // output all properties:
@@ -230,7 +231,7 @@ class DebugVarDumper
                             if ($prop->getModifiers() & $prop::IS_PRIVATE) $type[] = 'private';
                             $type = implode(' ', $type);
                             $prop->setAccessible(true); // else we can't access private/protected
-                            $output .= "\n".$spaces.$type.' $'.$prop->getName().' = '. self::dumpInternal($prop->getValue($var),$level+1) . ';';
+                            $output .= "\n".$spaces.$type.' $'.$prop->getName().' = '. $this->dumpInternal($prop->getValue($var),$level+1) . ';';
                             if ($prop->getDeclaringClass() != $reflClass)
                                 $output .= '#'.$prop->getDeclaringClass()->getName();
                         }
@@ -257,7 +258,7 @@ class DebugVarDumper
                                     $paramStr .= '&';
                                 $paramStr .= '$'.$param->getName();
                                 if ($param->isOptional())
-                                    $paramStr .= ' = '.self::dumpInternal($param->getDefaultValue(), $level+1);
+                                    $paramStr .= ' = '.$this->dumpInternal($param->getDefaultValue(), $level+1);
                                 $parameters[] = $paramStr;
                             }
 
@@ -296,7 +297,7 @@ class DebugVarDumper
                             $output.="\n".$spaces."    ".$type." $".$varName;
                             if (!is_null($value))
                             {
-                                $output.=" = ".self::dumpInternal($value,$level+1). ";";
+                                $output.=" = ".$this->dumpInternal($value,$level+1). ";";
                             }
                             else
                                 $output.=";";
