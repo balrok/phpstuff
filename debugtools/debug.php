@@ -1,16 +1,48 @@
 <?php
-$GLOBALS['debug_address'] = ''; //92.229.38.142';
-$GLOBALS['debug_useragent'] = ''; //92.229.38.142';
+/**
+ * example:
+include "debug.php";
+$configVarDumper['highlight'] = true;
+$configVarDumper['printConstants'] = false;
+$configVarDumper['printMethods'] = false;
+$configVarDumper['depth'] = 5;
+diedump($myVar);
+ *
+ */
 
+/** configures enableDebug */
+$debug_address = ''; // ip
+$debug_useragent = ''; // http user-agent
+
+$configVarDumper = array(
+    'printMethods' => true,
+    'printConstants' => true,
+    'highlight' => true,
+    'depth' => 3,
+);
+
+/**
+ * checks by ip/useragent if debugging is enabled
+ */
 function enableDebug()
 {
-    if (isset($_SERVER['HTTP_USER_AGENT']) && $GLOBALS['debug_useragent'])
-        return true;
-    if ($GLOBALS['debug_address'] && isset($_SERVER['REMOTE_ADDR']))
-        if ($_SERVER['REMOTE_ADDR'] != $GLOBALS['debug_address'])
+    global $debug_useragent;
+    global $debug_address;
+
+    if ($debug_useragent && isset($_SERVER['HTTP_USER_AGENT']))
+    {
+        if ($_SERVER['HTTP_USER_AGENT'] != $debug_useragent)
             return false;
-        if (!isset($_SERVER['HTTP_USER_AGENT'])) return false;
-        return $_SERVER['HTTP_USER_AGENT'];
+        return true;
+    }
+    if ($debug_address && isset($_SERVER['REMOTE_ADDR']))
+    {
+        if ($_SERVER['REMOTE_ADDR'] != $debug_address)
+            return false;
+        return true;
+    }
+    if ($debug_address && !isset($_SERVER['HTTP_USER_AGENT']))
+        return false;
     return true;
 }
 
@@ -57,9 +89,9 @@ function whereCalled($level = 1)
 
 /**
  * stops the program and dumps the variable content, also tries to make it visible by ending output-buffer and some html-tags
- * second parameter is optional and can be used to increase precision
+ * second parameter is optional and can be used to increase depth
  */
-function diedump($data, $prec=3)
+function diedump($data, $depth=null)
 {
     if (!enableDebug())
         return;
@@ -67,21 +99,26 @@ function diedump($data, $prec=3)
         continue;
     // if diedump is called inside a hidden div or script tag it won't be visible
     echo '<!-- --></div></div></script></script></script></div>';
-    die(dump($data, $prec));
+    die(dump($data, $depth));
 }
 
 /**
  * dumps the data in a nice and readable format
- * @param $prec precision how deep arrays/objects should be printed
+ * @param $depth how deep arrays/objects should be printed
  * @param $return if true it would only return a string, else output
  */
-function dump($data, $prec=3, $return = false)
+function dump($data, $depth=null, $return = false)
 {
+    global $configVarDumper;
+    $d = new DebugVarDumper();
+    foreach ($configVarDumper as $k=>$v)
+        $d->$k = $v;
+    if ($depth !==null)
+        $d->depth = $depth;
     if (!enableDebug())
         return;
     $ret = whereCalled(2);
-    $d = new DebugVarDumper();
-    $ret .= $d->dumpAsString($data, $prec, true);
+    $ret .= $d->dumpAsString($data);
     if ($return)
         return $ret;
     echo $ret;
@@ -105,37 +142,38 @@ function startswith($needle, $haystack)
  */
 class DebugVarDumper
 {
+    /** what to print for objects */
+    public $printMethods = true;
+    public $printConstants = true;
+    /** highlight the output */
+    public $highlight = true;
+    /** how deep the nesting of arrays/objects should be printed */
+    public $depth;
+
+
     private $_objects;
-    private $_depth;
 
     /**
      * Displays a variable.
      * This method achieves the similar functionality as var_dump and print_r
-     * but is more robust when handling complex objects such as Yii controllers.
      * @param mixed $var variable to be dumped
-     * @param integer $depth maximum depth that the dumper should go into the variable. Defaults to 10.
-     * @param boolean $highlight whether the result should be syntax-highlighted
      */
-    public function dump($var, $depth=10, $highlight=false)
+    public function dump($var)
     {
-        echo $this->dumpAsString($var,$depth,$highlight);
+        echo $this->dumpAsString($var);
     }
 
     /**
      * Dumps a variable in terms of a string.
      * This method achieves the similar functionality as var_dump and print_r
-     * but is more robust when handling complex objects such as Yii controllers.
      * @param mixed $var variable to be dumped
-     * @param integer $depth maximum depth that the dumper should go into the variable. Defaults to 10.
-     * @param boolean $highlight whether the result should be syntax-highlighted
      * @return string the string representation of the variable
      */
-    public function dumpAsString($var,$depth=10,$highlight=false)
+    public function dumpAsString($var)
     {
         $this->_objects=array();
-        $this->_depth=$depth;
         $output = $this->dumpInternal($var,0);
-        if($highlight)
+        if($this->highlight)
         {
             $result = highlight_string("<?php\n".$output,true);
             $output=preg_replace('/&lt;\\?php<br \\/>/','',$result,1);
@@ -147,7 +185,7 @@ class DebugVarDumper
      * @param mixed $var variable to be dumped
      * @param integer $level depth level
      */
-    private static function dumpInternal($var, $level)
+    private function dumpInternal($var, $level)
     {
         $output = '';
         switch(gettype($var))
@@ -174,7 +212,7 @@ class DebugVarDumper
                 $output.='{unknown}';
                 break;
             case 'array':
-                if($this->_depth<=$level)
+                if($this->depth<=$level)
                     $output.='array(...)';
                 else if(empty($var))
                     $output.='array()';
@@ -196,7 +234,7 @@ class DebugVarDumper
             case 'object':
                 if(($id=array_search($var,$this->_objects,true))!==false)
                     $output .= get_class($var).'#'.($id+1).'(...)';
-                else if($this->_depth<=$level)
+                else if($this->depth<=$level)
                     $output .= get_class($var).'(...)';
                 else
                 {
@@ -216,10 +254,9 @@ class DebugVarDumper
                         $level += 1;
                         $spaces=str_repeat(' ',$level*4);
                         // output all constants
-                        foreach ($reflClass->getConstants() as $key=>$value)
-                        {
-                            $output .= "\n".$spaces.$key.' = '.  $this->dumpInternal($value,$level+1) . ';';
-                        }
+                        if ($this->printConstants)
+                            foreach ($reflClass->getConstants() as $key=>$value)
+                                $output .= "\n".$spaces.$key.' = '.  $this->dumpInternal($value,$level+1) . ';';
 
                         // output all properties:
                         foreach ($reflClass->getProperties() as $prop)
@@ -237,40 +274,42 @@ class DebugVarDumper
                         }
 
                         // output all methods
-                        foreach ($reflClass->getMethods() as $meth)
+                        if ($this->printMethods)
                         {
-                            $type = array();
-                            if ($meth->getModifiers() & $meth::IS_STATIC) $type[] = 'static';
-                            if ($meth->getModifiers() & $meth::IS_PUBLIC) $type[] = 'public';
-                            if ($meth->getModifiers() & $meth::IS_PROTECTED) $type[] = 'protected';
-                            if ($meth->getModifiers() & $meth::IS_PRIVATE) $type[] = 'private';
-                            if ($meth->getModifiers() & $meth::IS_ABSTRACT) $type[] = 'abstract';
-                            if ($meth->getModifiers() & $meth::IS_FINAL) $type[] = 'final';
-                            $type = implode(' ', $type);
-
-                            $parameters = array();
-                            foreach ($meth->getParameters() as $param)
+                            foreach ($reflClass->getMethods() as $meth)
                             {
-                                $paramStr = '';
-                                if ($param->getClass())
-                                    $paramStr .= $param->getClass()->name;
-                                if ($param->isPassedByReference())
-                                    $paramStr .= '&';
-                                $paramStr .= '$'.$param->getName();
-                                if ($param->isOptional())
-                                    $paramStr .= ' = '.$this->dumpInternal($param->getDefaultValue(), $level+1);
-                                $parameters[] = $paramStr;
-                            }
+                                $type = array();
+                                if ($meth->getModifiers() & $meth::IS_STATIC) $type[] = 'static';
+                                if ($meth->getModifiers() & $meth::IS_PUBLIC) $type[] = 'public';
+                                if ($meth->getModifiers() & $meth::IS_PROTECTED) $type[] = 'protected';
+                                if ($meth->getModifiers() & $meth::IS_PRIVATE) $type[] = 'private';
+                                if ($meth->getModifiers() & $meth::IS_ABSTRACT) $type[] = 'abstract';
+                                if ($meth->getModifiers() & $meth::IS_FINAL) $type[] = 'final';
+                                $type = implode(' ', $type);
 
-                            $output .= "\n".$spaces.$type.' function '.$meth->getName().'('. implode(', ', $parameters).');';
-                            if ($meth->getDeclaringClass() != $reflClass)
-                                $output .= '#'.$meth->getDeclaringClass()->getName();
+                                $parameters = array();
+                                foreach ($meth->getParameters() as $param)
+                                {
+                                    $paramStr = '';
+                                    if ($param->getClass())
+                                        $paramStr .= $param->getClass()->name;
+                                    if ($param->isPassedByReference())
+                                        $paramStr .= '&';
+                                    $paramStr .= '$'.$param->getName();
+                                    if ($param->isOptional())
+                                        $paramStr .= ' = '.$this->dumpInternal($param->getDefaultValue(), $level+1);
+                                    $parameters[] = $paramStr;
+                                }
+
+                                $output .= "\n".$spaces.$type.' function '.$meth->getName().'('. implode(', ', $parameters).');';
+                                if ($meth->getDeclaringClass() != $reflClass)
+                                    $output .= '#'.$meth->getDeclaringClass()->getName();
+                            }
                         }
 
                         $level -= 1;
                         $spaces=str_repeat(' ',$level*4);
                         $output.="\n".$spaces.'}';
-                        //diedump2($reflClass);
                     }
                     else
                     {
@@ -311,3 +350,4 @@ class DebugVarDumper
         return $output;
     }
 }
+
