@@ -19,6 +19,8 @@ $configVarDumper = array(
     'printConstants' => true,
     'highlight' => true,
     'depth' => 3,
+    'filterArray'=>false,
+    'filterObject'=>false,
 );
 
 /**
@@ -144,11 +146,19 @@ class DebugVarDumper
 {
     /** what to print for objects */
     public $printMethods = true;
+    /** prints doc-comment for methods*/
+    public $printMethodComment = true;
     public $printConstants = true;
+    /** prints doc-comment for properties */
+    public $printPropertyComment = true;
     /** highlight the output */
     public $highlight = true;
     /** how deep the nesting of arrays/objects should be printed */
     public $depth;
+    // arrays after first level are only displayed shortly
+    public $filterArray = false;
+    // objects after first level are only displayed shortly
+    public $filterObject = false;
 
 
     private $_objects;
@@ -212,7 +222,7 @@ class DebugVarDumper
                 $output.='{unknown}';
                 break;
             case 'array':
-                if($this->depth<=$level)
+                if (($this->filterArray && $level > 1) || $this->depth <= $level)
                     $output.='array(...)';
                 else if(empty($var))
                     $output.='array()';
@@ -234,7 +244,7 @@ class DebugVarDumper
             case 'object':
                 if(($id=array_search($var,$this->_objects,true))!==false)
                     $output .= get_class($var).'#'.($id+1).'(...)';
-                else if($this->depth<=$level)
+                else if (($this->filterObject && $level > 1) || $this->depth <= $level)
                     $output .= get_class($var).'(...)';
                 else
                 {
@@ -268,6 +278,8 @@ class DebugVarDumper
                             if ($prop->getModifiers() & $prop::IS_PRIVATE) $type[] = 'private';
                             $type = implode(' ', $type);
                             $prop->setAccessible(true); // else we can't access private/protected
+                            if ($this->printPropertyComment && $prop->getDocComment())
+                                $output .= "\n".$spaces.$prop->getDocComment();
                             $output .= "\n".$spaces.$type.' $'.$prop->getName().' = '. $this->dumpInternal($prop->getValue($var),$level+1) . ';';
                             if ($prop->getDeclaringClass() != $reflClass)
                                 $output .= '#'.$prop->getDeclaringClass()->getName();
@@ -307,6 +319,8 @@ class DebugVarDumper
                                     $parameters[] = $paramStr;
                                 }
 
+                                if ($this->printMethodComment && $meth->getDocComment())
+                                    $output .= "\n".$spaces.$meth->getDocComment();
                                 $output .= "\n".$spaces.$type.' function '.$meth->getName().'('. implode(', ', $parameters).');';
                                 if ($meth->getDeclaringClass() != $reflClass)
                                     $output .= '#'.$meth->getDeclaringClass()->getName();
