@@ -272,10 +272,10 @@ class DebugVarDumper
                         foreach ($reflClass->getProperties() as $prop)
                         {
                             $type = array();
-                            if ($prop->getModifiers() & $prop::IS_STATIC) $type[] = 'static';
-                            if ($prop->getModifiers() & $prop::IS_PUBLIC) $type[] = 'public';
-                            if ($prop->getModifiers() & $prop::IS_PROTECTED) $type[] = 'protected';
-                            if ($prop->getModifiers() & $prop::IS_PRIVATE) $type[] = 'private';
+                            if ($prop->getModifiers() & ReflectionProperty::IS_STATIC) $type[] = 'static';
+                            if ($prop->getModifiers() & ReflectionProperty::IS_PUBLIC) $type[] = 'public';
+                            if ($prop->getModifiers() & ReflectionProperty::IS_PROTECTED) $type[] = 'protected';
+                            if ($prop->getModifiers() & ReflectionProperty::IS_PRIVATE) $type[] = 'private';
                             $type = implode(' ', $type);
                             $prop->setAccessible(true); // else we can't access private/protected
                             if ($this->printPropertyComment && $prop->getDocComment())
@@ -291,12 +291,12 @@ class DebugVarDumper
                             foreach ($reflClass->getMethods() as $meth)
                             {
                                 $type = array();
-                                if ($meth->getModifiers() & $meth::IS_STATIC) $type[] = 'static';
-                                if ($meth->getModifiers() & $meth::IS_PUBLIC) $type[] = 'public';
-                                if ($meth->getModifiers() & $meth::IS_PROTECTED) $type[] = 'protected';
-                                if ($meth->getModifiers() & $meth::IS_PRIVATE) $type[] = 'private';
-                                if ($meth->getModifiers() & $meth::IS_ABSTRACT) $type[] = 'abstract';
-                                if ($meth->getModifiers() & $meth::IS_FINAL) $type[] = 'final';
+                                if ($meth->getModifiers() & ReflectionMethod::IS_STATIC) $type[] = 'static';
+                                if ($meth->getModifiers() & ReflectionMethod::IS_PUBLIC) $type[] = 'public';
+                                if ($meth->getModifiers() & ReflectionMethod::IS_PROTECTED) $type[] = 'protected';
+                                if ($meth->getModifiers() & ReflectionMethod::IS_PRIVATE) $type[] = 'private';
+                                if ($meth->getModifiers() & ReflectionMethod::IS_ABSTRACT) $type[] = 'abstract';
+                                if ($meth->getModifiers() & ReflectionMethod::IS_FINAL) $type[] = 'final';
                                 if ($meth->isInternal()) $type[] = '/*internal*/';
                                 $type = implode(' ', $type);
 
