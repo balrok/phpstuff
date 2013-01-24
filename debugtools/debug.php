@@ -277,12 +277,17 @@ class DebugVarDumper
                             if ($prop->getModifiers() & ReflectionProperty::IS_PROTECTED) $type[] = 'protected';
                             if ($prop->getModifiers() & ReflectionProperty::IS_PRIVATE) $type[] = 'private';
                             $type = implode(' ', $type);
-                            $prop->setAccessible(true); // else we can't access private/protected
-                            if ($this->printPropertyComment && $prop->getDocComment())
-                                $output .= "\n".$spaces.$prop->getDocComment();
-                            $output .= "\n".$spaces.$type.' $'.$prop->getName().' = '. $this->dumpInternal($prop->getValue($var),$level+1) . ';';
-                            if ($prop->getDeclaringClass() != $reflClass)
-                                $output .= '#'.$prop->getDeclaringClass()->getName();
+                            // prop->setAccessible() exists only since 5.3 - as fallback just don't display private stuff
+                            if (version_compare(PHP_VERSION, '5.3.0') >= 0 || $prop->isPublic())
+                            {
+                                if (version_compare(PHP_VERSION, '5.3.0') >= 0)
+                                    $prop->setAccessible(true); // else we can't access private/protected
+                                if ($this->printPropertyComment && $prop->getDocComment())
+                                    $output .= "\n".$spaces.$prop->getDocComment();
+                                $output .= "\n".$spaces.$type.' $'.$prop->getName().' = '. $this->dumpInternal($prop->getValue($var),$level+1) . ';';
+                                if ($prop->getDeclaringClass() != $reflClass)
+                                    $output .= '#'.$prop->getDeclaringClass()->getName();
+                            }
                         }
 
                         // output all methods
