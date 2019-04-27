@@ -288,6 +288,9 @@ class Converter {
 
             foreach ($coverageData as $line => $data)
             {
+				// 1: this line was executed
+				// -1: this line was not executed
+				// -2: this line did not have executable code on it
                 if ($line > 0) // TODO is this right?
                 {
                     $lines[$line] = array(
